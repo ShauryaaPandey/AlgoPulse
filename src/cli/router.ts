@@ -3,6 +3,7 @@ import { signupCommand } from './commands/signup.js';
 import { loginCommand } from './commands/login.js';
 import { logoutCommand } from './commands/logout.js';
 import { meCommand } from './commands/me.js';
+import { profileCommand } from './commands/profile.js';
 
 export function printUsage(): void {
   console.log('AlgoPulse - Competitive Programming CLI Companion\n');
@@ -13,6 +14,10 @@ export function printUsage(): void {
   console.log('  login       Log in to your account');
   console.log('  logout      Log out of your current session');
   console.log('  me          View your profile and connected platforms');
+  console.log('  profile     Manage connected coding profiles');
+  console.log('    add       Add a new profile');
+  console.log('    remove    Remove a profile');
+  console.log('    verify    Verify all connected profiles');
   console.log('  help        Show available commands and usage\n');
 }
 
@@ -39,6 +44,9 @@ export async function route(parsed: ParsedArgs): Promise<void> {
       break;
     case 'me':
       await meCommand();
+      break;
+    case 'profile':
+      await profileCommand(parsed.subcommand ?? undefined, parsed.args[0]);
       break;
     default:
       console.error(`Unknown command: "${parsed.command}"\n`);
