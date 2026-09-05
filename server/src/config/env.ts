@@ -10,6 +10,9 @@ const envSchema = z.object({
   PORT: z.string().default('3000').transform(Number),
   CLIENT_URL: z.string().default('http://localhost:5173'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  MONGODB_URI: z.string().optional(),
+  MONGODB_DATABASE: z.string().default('algopulse'),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

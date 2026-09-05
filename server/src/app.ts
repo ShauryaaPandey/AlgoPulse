@@ -10,6 +10,10 @@ import { profilesRouter } from './routes/profiles.js';
 import { syncRouter } from './routes/sync.js';
 import { analyticsRouter } from './routes/analytics.js';
 import { recommendationsRouter } from './routes/recommendations.js';
+import { searchRouter } from './routes/search.js';
+import { explainRouter } from './routes/explain.js';
+import { interviewRouter } from './routes/interview.js';
+import { problemsRouter } from './routes/problems.js';
 import { env } from './config/env.js';
 
 export function createApp() {
@@ -45,6 +49,10 @@ export function createApp() {
   app.use('/api/sync', syncRouter);
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/recommendations', recommendationsRouter);
+  app.use('/api/search', searchRouter);
+  app.use('/api/explain', explainRouter);
+  app.use('/api/interview', interviewRouter);
+  app.use('/api/problems', problemsRouter);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });

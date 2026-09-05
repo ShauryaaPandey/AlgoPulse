@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api, getErrorMessage } from '../../lib/api';
+import { ExplainPanel } from '../../components/ai/ExplainPanel';
 
 interface Weakness {
   topic: string;
@@ -172,6 +173,12 @@ export function Weaknesses() {
           </div>
         </div>
       </div>
+
+      <ExplainPanel
+        endpoint="/explain/weaknesses"
+        label="Weaknesses"
+        queryKey={['explain', 'weaknesses']}
+      />
     </div>
   );
 }

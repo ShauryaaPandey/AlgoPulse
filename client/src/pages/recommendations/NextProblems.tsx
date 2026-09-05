@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { api, getErrorMessage } from '../../lib/api';
+import { FindSimilarModal } from '../../components/ai/FindSimilarModal';
 
 interface Problem {
   id: string;
@@ -49,6 +51,8 @@ function ratingToDifficulty(rating: number | null): string {
 
 export function NextProblems() {
   const queryClient = useQueryClient();
+  const [similarProblemId, setSimilarProblemId] = useState<string | null>(null);
+  const [similarProblemTitle, setSimilarProblemTitle] = useState('');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['recommendations', 'next'],
@@ -179,6 +183,12 @@ export function NextProblems() {
                   >
                     Dismiss
                   </button>
+                  <button
+                    onClick={() => { setSimilarProblemId(rec.problemId); setSimilarProblemTitle(rec.problem.title); }}
+                    className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
+                  >
+                    Find similar
+                  </button>
                   {rec.problem.url && (
                     <a
                       href={rec.problem.url}
@@ -195,6 +205,14 @@ export function NextProblems() {
           );
         })}
       </div>
+
+      {similarProblemId && (
+        <FindSimilarModal
+          problemId={similarProblemId}
+          problemTitle={similarProblemTitle}
+          onClose={() => setSimilarProblemId(null)}
+        />
+      )}
     </div>
   );
 }

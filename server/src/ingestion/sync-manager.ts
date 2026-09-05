@@ -20,6 +20,7 @@ import { ProgressEngine } from '../analytics/progress-engine.js';
 import { DecayEngine } from '../analytics/decay-engine.js';
 import { ContestEngine } from '../analytics/contest-engine.js';
 import { RecommendationEngine } from '../recommendations/recommendation-engine.js';
+import { indexProblems } from '../vector/problem-indexer.js';
 
 export interface SyncResult {
   platform: string;
@@ -236,6 +237,14 @@ export class SyncManager {
       if (solvedProblemIds.length > 0) {
         recommendationEngine.autoCompleteForSolvedProblems(userId, solvedProblemIds);
       }
+
+      indexProblems(this.db).then(({ indexed, skipped }) => {
+        if (indexed > 0 || skipped > 0) {
+          logger.info(`Vector indexing: ${indexed} indexed, ${skipped} skipped`);
+        }
+      }).catch(err => {
+        logger.warn('Vector indexing failed (non-critical):', err);
+      });
 
       logger.info(`Analytics recomputed for user ${userId}`);
     } catch (error) {

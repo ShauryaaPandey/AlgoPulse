@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { api, getErrorMessage } from '../../lib/api';
+import { ExplainPanel } from '../../components/ai/ExplainPanel';
 
 interface FailurePattern {
   topic: string;
@@ -205,6 +206,12 @@ export function Failures() {
           </div>
         </div>
       </div>
+
+      <ExplainPanel
+        endpoint="/explain/failures"
+        label="Failures"
+        queryKey={['explain', 'failures']}
+      />
     </div>
   );
 }

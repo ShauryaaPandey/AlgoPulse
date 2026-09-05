@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { api, getErrorMessage } from '../../lib/api';
+import { ExplainPanel } from '../../components/ai/ExplainPanel';
 
 interface MonthlyScore {
   month: string;
@@ -218,6 +219,12 @@ export function Progress() {
           ))}
         </ul>
       </div>
+
+      <ExplainPanel
+        endpoint="/explain/progress"
+        label="Progress"
+        queryKey={['explain', 'progress']}
+      />
     </div>
   );
 }
