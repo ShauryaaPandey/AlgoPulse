@@ -12,6 +12,13 @@ import { Fetcher } from './fetcher.js';
 import { logger } from '../utils/logger.js';
 import { Platform } from '../config/constants.js';
 import { CodeforcesAdapter } from '../adapters/codeforces/adapter.js';
+import { SkillEngine } from '../analytics/skill-engine.js';
+import { DifficultyEngine } from '../analytics/difficulty-engine.js';
+import { WeaknessEngine } from '../analytics/weakness-engine.js';
+import { FailureEngine } from '../analytics/failure-engine.js';
+import { ProgressEngine } from '../analytics/progress-engine.js';
+import { DecayEngine } from '../analytics/decay-engine.js';
+import { ContestEngine } from '../analytics/contest-engine.js';
 
 export interface SyncResult {
   platform: string;
@@ -198,6 +205,8 @@ export class SyncManager {
       }
     }
 
+    this.recomputeAnalytics(userId);
+
     return results;
   }
 
@@ -209,6 +218,26 @@ export class SyncManager {
       throw new Error(`No ${platform} account connected for user`);
     }
 
-    return this.syncPlatformAccount(account, fullSync);
+    const result = await this.syncPlatformAccount(account, fullSync);
+    
+    this.recomputeAnalytics(userId);
+
+    return result;
+  }
+
+  private recomputeAnalytics(userId: string): void {
+    try {
+      logger.info(`Recomputing analytics for user ${userId}`);
+
+      const skillEngine = new SkillEngine(this.db);
+      skillEngine.computeSkillScores(userId);
+
+      const failureEngine = new FailureEngine(this.db);
+      failureEngine.analyzeFailures(userId);
+
+      logger.info(`Analytics recomputed for user ${userId}`);
+    } catch (error) {
+      logger.error(`Analytics computation failed for user ${userId}:`, error);
+    }
   }
 }

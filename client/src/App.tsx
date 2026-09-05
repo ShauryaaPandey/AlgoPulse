@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { Profiles } from './pages/Profiles';
+import { Analytics } from './pages/Analytics';
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profiles />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <Analytics />
                 </ProtectedRoute>
               }
             />

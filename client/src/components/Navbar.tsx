@@ -35,6 +35,12 @@ export function Navbar() {
               >
                 Profiles
               </Link>
+              <Link
+                to="/analytics"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+              >
+                Analytics
+              </Link>
             </div>
           </div>
           <div className="flex items-center">
