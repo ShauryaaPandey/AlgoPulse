@@ -7,6 +7,7 @@ import 'express-async-errors';
 import { errorHandler } from './middleware/error-handler.js';
 import { authRouter } from './routes/auth.js';
 import { profilesRouter } from './routes/profiles.js';
+import { syncRouter } from './routes/sync.js';
 import { env } from './config/env.js';
 
 export function createApp() {
@@ -39,6 +40,7 @@ export function createApp() {
 
   app.use('/api/auth', authRouter);
   app.use('/api/profiles', profilesRouter);
+  app.use('/api/sync', syncRouter);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
