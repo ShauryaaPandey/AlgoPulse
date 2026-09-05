@@ -49,7 +49,8 @@ router.post('/:id/dismiss', (req: AuthRequest, res) => {
   const engine = new RecommendationEngine(db);
 
   const { id } = req.params;
-  const dismissed = engine.dismiss(id, req.userId!);
+  const recId = typeof id === 'string' ? id : '';
+  const dismissed = engine.dismiss(recId, req.userId!);
 
   if (!dismissed) {
     throw new NotFoundError('Recommendation', 'Recommendation not found or already completed');

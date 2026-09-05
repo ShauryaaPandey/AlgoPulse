@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../lib/api';
@@ -16,8 +16,16 @@ type LoginForm = z.infer<typeof loginSchema>;
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reason = searchParams.get('reason');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const sessionMessage = reason === 'expired'
+    ? 'Session expired, please log in again.'
+    : reason === 'required'
+    ? 'Please log in to continue.'
+    : null;
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema)
@@ -52,6 +60,11 @@ export function Login() {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {sessionMessage && (
+            <div className="rounded-md bg-amber-50 p-4">
+              <p className="text-sm text-amber-800">{sessionMessage}</p>
+            </div>
+          )}
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <p className="text-sm text-red-800">{error}</p>

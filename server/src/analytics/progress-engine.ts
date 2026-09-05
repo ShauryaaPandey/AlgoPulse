@@ -83,8 +83,8 @@ export class ProgressEngine {
       if (entries.length < 2) continue;
 
       const monthlyData = this.aggregateMonthly(entries);
-      const currentScore = entries[entries.length - 1].score;
-      const previousScore = entries[0].score;
+      const currentScore = entries[entries.length - 1]!.score;
+      const previousScore = entries[0]!.score;
       const change = currentScore - previousScore;
       const changePercent = previousScore > 0 ? (change / previousScore) * 100 : 0;
 
@@ -150,32 +150,26 @@ export class ProgressEngine {
 
   private findBiggestImprovement(progress: TopicProgress[]): string | null {
     if (progress.length === 0) return null;
-
     const improving = progress.filter(p => p.change > 0);
     if (improving.length === 0) return null;
-
     improving.sort((a, b) => b.change - a.change);
-    return improving[0].topic;
+    return improving[0]!.topic;
   }
 
   private findBiggestRegression(progress: TopicProgress[]): string | null {
     if (progress.length === 0) return null;
-
     const regressing = progress.filter(p => p.change < 0);
     if (regressing.length === 0) return null;
-
     regressing.sort((a, b) => a.change - b.change);
-    return regressing[0].topic;
+    return regressing[0]!.topic;
   }
 
   private findMostStable(progress: TopicProgress[]): string | null {
     if (progress.length === 0) return null;
-
     const stable = progress.filter(p => p.trend === 'stable');
     if (stable.length === 0) return null;
-
     stable.sort((a, b) => Math.abs(a.change) - Math.abs(b.change));
-    return stable[0].topic;
+    return stable[0]!.topic;
   }
 
   private findSlowImprovement(progress: TopicProgress[]): string[] {

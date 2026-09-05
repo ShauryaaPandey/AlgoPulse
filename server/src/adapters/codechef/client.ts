@@ -126,12 +126,12 @@ function parseRecentSubmissions(html: string, _username: string): CodeChefSubmis
 
   let idx = 0;
   for (const rowMatch of rowMatches) {
-    const cells = [...rowMatch[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m =>
-      m[1].replace(/<[^>]+>/g, '').trim()
+    const cells = [...rowMatch[1]!.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m =>
+      m[1]!.replace(/<[^>]+>/g, '').trim()
     );
     if (cells.length < 3) continue;
 
-    const problemCode = extractHref(rowMatch[1])?.split('/').pop() ?? cells[1] ?? `UNKNOWN-${idx}`;
+    const problemCode = extractHref(rowMatch[1]!)?.split('/').pop() ?? cells[1] ?? `UNKNOWN-${idx}`;
     const result = cells[2] ?? '';
     const language = cells[3] ?? '';
     const date = cells[4] ?? '';

@@ -127,8 +127,8 @@ export class FailureEngine {
 
   private classifyPattern(topic: string, verdict: string, failures: FailureData[]): FailurePattern | null {
     const frequency = failures.length;
-    const firstDetected = failures[0].submitted_at;
-    const lastDetected = failures[failures.length - 1].submitted_at;
+    const firstDetected = failures[0]!.submitted_at;
+    const lastDetected = failures[failures.length - 1]!.submitted_at;
 
     let failureType = verdict;
     let description = '';

@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/foundation.test.ts tests/auth/auth.test.ts tests/profiles/url-parser.test.ts tests/profiles/platform-detector.test.ts tests/profiles/username-extractor.test.ts tests/adapters/codeforces-mapper.test.ts tests/adapters/leetcode-mapper.test.ts tests/adapters/codechef-mapper.test.ts tests/adapters/adapter-factory.test.ts tests/analytics/skill-engine.test.ts tests/analytics/difficulty-engine.test.ts tests/analytics/weakness-engine.test.ts tests/analytics/failure-engine.test.ts tests/recommendations/problem-selector.test.ts tests/recommendations/recommendation-engine.test.ts"
+    "test": "tsx --test tests/foundation.test.ts tests/auth/auth.test.ts tests/profiles/url-parser.test.ts tests/profiles/platform-detector.test.ts tests/profiles/username-extractor.test.ts tests/adapters/codeforces-mapper.test.ts tests/adapters/leetcode-mapper.test.ts tests/adapters/codechef-mapper.test.ts tests/adapters/adapter-factory.test.ts tests/analytics/skill-engine.test.ts tests/analytics/difficulty-engine.test.ts tests/analytics/weakness-engine.test.ts tests/analytics/failure-engine.test.ts tests/analytics/decay-engine.test.ts tests/analytics/progress-engine.test.ts tests/analytics/contest-engine.test.ts tests/recommendations/problem-selector.test.ts tests/recommendations/recommendation-engine.test.ts tests/recommendations/roadmap-engine.test.ts tests/recommendations/revision-engine.test.ts tests/vector/problem-indexer.test.ts tests/vector/vector-search.test.ts tests/security/cross-user.test.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.121",

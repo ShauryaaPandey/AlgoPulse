@@ -48,7 +48,7 @@ export class RoadmapEngine {
     const weeks: RoadmapWeek[] = [];
 
     for (let i = 0; i < Math.min(orderedTopics.length, totalWeeks); i++) {
-      const entry = orderedTopics[i];
+      const entry = orderedTopics[i]!;
       const ceiling = ceilingMap.get(entry.topic);
       const decay = decayMap.get(entry.topic);
 

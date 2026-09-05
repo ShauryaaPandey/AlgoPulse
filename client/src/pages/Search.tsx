@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Navbar } from '../components/Navbar';
 import { FindSimilarModal } from '../components/ai/FindSimilarModal';
 import { api, getErrorMessage } from '../lib/api';
+import { useHealth } from '../lib/useHealth';
 
 interface SearchResult {
   problemId: string;
@@ -35,6 +36,7 @@ export function Search() {
   const [similarProblemId, setSimilarProblemId] = useState<string | null>(null);
   const [similarProblemTitle, setSimilarProblemTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data: health } = useHealth();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['search', submittedQuery],
@@ -70,6 +72,13 @@ export function Search() {
           <p className="mt-1 text-sm text-gray-500">
             Describe what you want to practice in plain English — powered by vector embeddings.
           </p>
+          {health && (!health.mongoConfigured || !health.aiConfigured) && (
+            <div className="mt-3 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+              ⚠️ {!health.mongoConfigured && 'MongoDB Atlas is not configured (MONGODB_URI missing). '}
+              {!health.aiConfigured && 'Gemini AI is not configured (GEMINI_API_KEY missing). '}
+              Search will not return results until these are set up.
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSearch} className="mb-6">

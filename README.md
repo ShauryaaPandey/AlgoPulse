@@ -1,219 +1,169 @@
 # AlgoPulse
 
-A full-stack web application for competitive programming analytics. Connect your coding profiles from Codeforces, LeetCode, and CodeChef to analyze your skill patterns, identify weaknesses, and get personalized problem recommendations.
+A full-stack competitive programming analytics platform. Connect your Codeforces, LeetCode, and CodeChef profiles, sync your submission history, and get deterministic skill analysis, personalised problem recommendations, AI-powered explanations, semantic search, and interview prep intelligence — all in one place.
 
-## Features
+---
 
-- 🔐 Secure authentication with JWT and httpOnly cookies
-- 🔗 Connect multiple competitive programming profiles (Codeforces, LeetCode, CodeChef)
-- ✅ Automated profile verification via platform APIs
-- 📊 Dashboard showing connected profiles and account stats
-- 🎯 Clean, responsive UI built with React and TailwindCSS
-
-## Tech Stack
-
-### Backend (server/)
-- Express.js with TypeScript
-- SQLite with better-sqlite3
-- JWT authentication with httpOnly cookies
-- Helmet, CORS, rate limiting
-- Zod for request validation
-- Existing adapters: Codeforces (with rate limiting and retry logic)
-
-### Frontend (client/)
-- React 18 with TypeScript
-- Vite for fast development
-- TailwindCSS for styling
-- React Router for navigation
-- React Hook Form + Zod for form validation
-- Axios for API calls
-- TanStack React Query for data fetching
-
-## Project Structure
+## Architecture
 
 ```
-AlgoPulse/
-├── server/              # Backend Express API
-│   ├── src/
-│   │   ├── adapters/    # Platform adapters (Codeforces, LeetCode, CodeChef)
-│   │   ├── auth/        # Authentication logic
-│   │   ├── db/          # Database setup and migrations
-│   │   ├── middleware/  # Express middleware
-│   │   ├── routes/      # API routes
-│   │   ├── profiles/    # URL parsing and platform detection
-│   │   ├── types/       # TypeScript types
-│   │   ├── utils/       # Utility functions
-│   │   ├── app.ts       # Express app setup
-│   │   └── index.ts     # Server entry point
-│   └── tests/           # Server tests
-├── client/              # Frontend React app
-│   ├── src/
-│   │   ├── components/  # Reusable components
-│   │   ├── context/     # React context (Auth)
-│   │   ├── lib/         # Utilities (API client)
-│   │   ├── pages/       # Page components
-│   │   ├── App.tsx      # Main app component
-│   │   └── main.tsx     # React entry point
-│   └── public/          # Static assets
-└── data/                # SQLite database file
+React Client (Vite + Tailwind)
+    │
+    │  HTTP/REST (cookies, JSON)
+    ▼
+Express API  (TypeScript, Node.js)
+    ├── Auth         — JWT in httpOnly cookies, bcrypt password hashing
+    ├── Profiles     — connect/verify Codeforces, LeetCode, CodeChef via platform adapters
+    ├── Ingestion    — sync submissions, problems, contests via platform adapters → SQLite
+    ├── Analytics    — deterministic engines: skill scores, weaknesses, failures, progress, decay, contests
+    ├── Recommendations — next problems, week-by-week roadmap, revision list
+    ├── Vector Search ──── MongoDB Atlas Vector Search + Gemini embeddings
+    ├── AI Layer     ───── Gemini 1.5 Flash (structured output) explains pre-computed analytics
+    ├── Interview Intel ─── company topic-weight profiles → readiness score
+    └── Report       — full analytics snapshot exportable as JSON or Markdown
+    │
+    ├── SQLite (better-sqlite3)
+    │     tables: users, platform_accounts, problems, problem_topics, submissions,
+    │             contests, contest_problems, contest_submissions,
+    │             skill_scores, skill_history, failure_patterns,
+    │             recommendations, sync_state
+    │
+    └── MongoDB Atlas
+          collection: problems  { problemId, platform, title, topics, difficulty, embedding[768] }
 ```
+
+---
 
 ## Setup
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- npm (v9 or higher)
+- Node.js ≥ 20
+- npm ≥ 10
+- (Optional) MongoDB Atlas cluster with Vector Search index named `problems_vector_index`
+- (Optional) Google Gemini API key from [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
-### Installation
+### Install
 
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd AlgoPulse
+npm install          # installs root + both workspaces
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+### Configure environment
 
-3. Set up environment variables:
-
-Create `server/.env` based on `server/.env.example`:
 ```bash
+# server
 cp server/.env.example server/.env
+# edit server/.env — at minimum set JWT_SECRET
+
+# client
+cp client/.env.example client/.env
+# VITE_API_URL defaults to http://localhost:3000/api
 ```
 
-Required environment variables:
-```env
-JWT_SECRET=your-secret-key-change-in-production
-SQLITE_DATABASE_PATH=./data/algopulse.db
-LOG_LEVEL=info
-PORT=3000
-CLIENT_URL=http://localhost:5173
-NODE_ENV=development
-```
+### Run in development
 
-4. The database will be automatically created and migrated on first server start.
-
-### Development
-
-Start both server and client in development mode:
 ```bash
-npm run dev
+npm run dev          # starts both server (port 3000) and client (port 5173) concurrently
 ```
 
-This runs:
-- Server on http://localhost:3000
-- Client on http://localhost:5173
+### Run tests
 
-The client is configured to proxy API requests to the server.
-
-### Individual Commands
-
-Run server only:
 ```bash
-npm run dev --workspace=server
+npm test --workspace=server
 ```
 
-Run client only:
-```bash
-npm run dev --workspace=client
+### MongoDB Atlas Vector Search (optional)
+
+1. Create a free M0 cluster at [cloud.mongodb.com](https://cloud.mongodb.com)
+2. Enable **Atlas Vector Search** on your cluster
+3. Create a search index named `problems_vector_index` on the `algopulse.problems` collection:
+
+```json
+{
+  "fields": [
+    { "type": "vector", "path": "embedding", "numDimensions": 768, "similarity": "cosine" },
+    { "type": "filter", "path": "topics" },
+    { "type": "filter", "path": "platform" },
+    { "type": "filter", "path": "difficulty" },
+    { "type": "filter", "path": "rating" }
+  ]
+}
 ```
 
-Build both:
-```bash
-npm run build
-```
+4. Add `MONGODB_URI` and `MONGODB_DATABASE` to `server/.env`
+5. Add `GEMINI_API_KEY` for embeddings + AI explanations
 
-Run tests:
-```bash
-npm test
-```
+Problems are automatically indexed into MongoDB after each sync. The `GET /api/health` endpoint reports whether Mongo and AI are configured.
 
-Type checking:
-```bash
-npm run typecheck
-```
+---
 
-## API Endpoints
+## API Route Reference
 
-### Authentication
-- `POST /api/auth/signup` - Create account
-- `POST /api/auth/login` - Sign in
-- `POST /api/auth/logout` - Sign out
-- `GET /api/auth/me` - Get current user and connected profiles
+All routes (except `/api/auth/*` and `/api/health`) require authentication via the `algopulse_token` httpOnly cookie set on login/signup.
 
-### Profiles
-- `GET /api/profiles` - List connected profiles
-- `POST /api/profiles` - Add new profile (verifies via platform API)
-- `DELETE /api/profiles/:platform` - Remove profile
-- `POST /api/profiles/verify` - Re-verify all connected profiles
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/auth/signup` | No | Create account. Rate limited: 10 req/15 min. |
+| POST | `/api/auth/login` | No | Login, sets httpOnly cookie. Rate limited: 10 req/15 min. |
+| POST | `/api/auth/logout` | No | Clears auth cookie. |
+| GET | `/api/auth/me` | Yes | Current user + connected profiles. |
+| GET | `/api/health` | No | `{ status, mongoConfigured, aiConfigured }` |
+| GET | `/api/profiles` | Yes | List connected platform profiles. |
+| POST | `/api/profiles` | Yes | Connect a new profile by URL. |
+| DELETE | `/api/profiles/:platform` | Yes | Remove a connected profile. |
+| POST | `/api/profiles/verify` | Yes | Re-verify all connected profiles. |
+| POST | `/api/sync` | Yes | Sync all platforms. `?platform=codeforces` for one. `?full=true` for full re-sync. |
+| POST | `/api/sync?platform=X` | Yes | Sync a single platform. |
+| GET | `/api/sync/status` | Yes | Last sync time per connected platform. |
+| GET | `/api/analytics/skills` | Yes | Per-topic skill scores (0–100) + difficulty ceilings. |
+| GET | `/api/analytics/weaknesses` | Yes | Topics ranked by weakness score + severity. |
+| GET | `/api/analytics/failures` | Yes | Verdict distribution + recurring failure patterns. |
+| GET | `/api/analytics/progress` | Yes | Month-by-month skill trend per topic. |
+| GET | `/api/analytics/contests` | Yes | Contest performance by problem index + decay warnings. |
+| GET | `/api/recommendations/next` | Yes | Ranked list of next problems to solve. |
+| GET | `/api/recommendations/roadmap` | Yes | Week-by-week practice roadmap. `?weeks=N` |
+| GET | `/api/recommendations/revise` | Yes | Previously-failed problems worth revisiting. |
+| POST | `/api/recommendations/:id/dismiss` | Yes | Mark a recommendation as dismissed. |
+| GET | `/api/search?q=<query>` | Yes | Semantic vector search. Optional: `topic`, `platform`, `difficulty`, `minRating`, `maxRating`, `limit`. |
+| GET | `/api/search/similar/:id` | Yes | Find semantically similar unsolved problems for a given problem. |
+| GET | `/api/problems/:id/similar` | Yes | Same as above, alternate path. |
+| GET | `/api/explain` | Yes | AI explanation of overall skill profile. |
+| GET | `/api/explain/weaknesses` | Yes | AI explanation of weakness analysis. |
+| GET | `/api/explain/failures` | Yes | AI explanation of failure patterns. |
+| GET | `/api/explain/progress` | Yes | AI explanation of progress trends. |
+| GET | `/api/explain/roadmap` | Yes | AI explanation of recommended roadmap. |
+| GET | `/api/interview?company=X` | Yes | Interview prep areas + readiness score (0–100) for a company. |
+| GET | `/api/report?format=json\|markdown` | Yes | Download full analytics report as JSON or Markdown. |
 
-## Usage
+---
 
-1. **Sign up** at http://localhost:5173/signup
-2. **Log in** with your credentials
-3. **Dashboard** - View your account and connected profiles
-4. **Profiles** - Add a profile by pasting a URL:
-   - Codeforces: `https://codeforces.com/profile/<username>`
-   - LeetCode: `https://leetcode.com/u/<username>/`
-   - CodeChef: `https://www.codechef.com/users/<username>`
-5. The system will detect the platform, extract the username, and verify the profile exists
-6. Connected profiles are displayed on both Dashboard and Profiles pages
-7. Remove profiles using the "Remove" button
+## Manual Verification Checklist
 
-## Platform Support
+- [ ] Signup → login → cookie set, `/api/auth/me` returns user
+- [ ] Connect Codeforces profile URL → verified and stored
+- [ ] Connect LeetCode profile URL → verified and stored
+- [ ] Connect CodeChef profile URL → verified and stored
+- [ ] Sync → new submissions/problems/contests written to SQLite
+- [ ] Skills page shows per-topic skill scores with bar charts
+- [ ] Weaknesses page shows severity-ranked topic cards
+- [ ] Failures page shows verdict pie chart + Failure DNA patterns
+- [ ] Progress page shows monthly line chart with improvement/regression badges
+- [ ] Contests page shows solve rate by problem index
+- [ ] Next Problems shows ranked recommendation cards
+- [ ] Roadmap shows week-by-week timeline
+- [ ] Revise shows failed-problem groups by failure type
+- [ ] Search (with Mongo+Gemini configured) returns semantic results
+- [ ] Find Similar modal shows related unsolved problems
+- [ ] AI Explain buttons on each analytics sub-page work with GEMINI_API_KEY
+- [ ] Interview Prep shows preparation areas and readiness score for a company
+- [ ] Report: Download JSON → opens file · Download Markdown → opens file
+- [ ] Logout → cookie cleared, redirected to /login
+- [ ] Unauthenticated API request returns 401
+- [ ] User B cannot read User A's data (cross-user security)
 
-### ✅ Codeforces (Fully Implemented)
-- Profile verification via API
-- Rate limiting (1 request per 2 seconds)
-- Retry logic with exponential backoff
-- Fetches: user info, submissions, contests, problems
-
-### 🚧 LeetCode (Adapter Interface Ready)
-- URL parsing and username extraction implemented
-- Adapter implementation pending
-
-### 🚧 CodeChef (Adapter Interface Ready)
-- URL parsing and username extraction implemented
-- Adapter implementation pending
-
-## Testing
-
-Run the test suite:
-```bash
-npm test
-```
-
-Tests cover:
-- URL parsing for all three platforms
-- Platform detection
-- Username extraction
-- Codeforces API mapper
-- Authentication logic
-- Database initialization
-
-## Security Features
-
-- Passwords hashed with bcrypt
-- JWT tokens stored in httpOnly, secure cookies
-- CSRF protection with sameSite cookie settings
-- Helmet.js for security headers
-- CORS configured for specific origins
-- Rate limiting on all API endpoints
-- Input validation with Zod schemas
-- SQL injection prevention with prepared statements
-
-## Development Notes
-
-- Server auto-restarts on file changes (tsx watch)
-- Client has HMR enabled (Vite)
-- TypeScript strict mode enabled
-- Database migrations run automatically
-- All business logic (auth, adapters, profiles, db) preserved from CLI version
+---
 
 ## License
 
-ISC
+MIT — see [LICENSE](./LICENSE)

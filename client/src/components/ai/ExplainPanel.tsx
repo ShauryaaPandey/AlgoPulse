@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, getErrorMessage } from '../../lib/api';
+import { useHealth } from '../../lib/useHealth';
 
 interface Insight {
   summary: string;
@@ -17,6 +18,8 @@ interface Props {
 
 export function ExplainPanel({ endpoint, label, queryKey }: Props) {
   const [enabled, setEnabled] = useState(false);
+  const { data: health } = useHealth();
+  const aiUnavailable = health && !health.aiConfigured;
 
   const { data, isLoading, error } = useQuery({
     queryKey,
@@ -34,15 +37,19 @@ export function ExplainPanel({ endpoint, label, queryKey }: Props) {
         <div>
           <p className="text-sm font-medium text-indigo-800">✨ AI Explanation</p>
           <p className="text-xs text-indigo-600 mt-0.5">
-            Get a plain-English explanation of your {label.toLowerCase()} analytics.
+            {aiUnavailable
+              ? 'AI explanations require GEMINI_API_KEY to be configured.'
+              : `Get a plain-English explanation of your ${label.toLowerCase()} analytics.`}
           </p>
         </div>
-        <button
-          onClick={() => setEnabled(true)}
-          className="flex-shrink-0 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Explain with AI
-        </button>
+        {!aiUnavailable && (
+          <button
+            onClick={() => setEnabled(true)}
+            className="flex-shrink-0 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Explain with AI
+          </button>
+        )}
       </div>
     );
   }

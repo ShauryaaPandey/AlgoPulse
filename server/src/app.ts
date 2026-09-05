@@ -14,7 +14,10 @@ import { searchRouter } from './routes/search.js';
 import { explainRouter } from './routes/explain.js';
 import { interviewRouter } from './routes/interview.js';
 import { problemsRouter } from './routes/problems.js';
+import { reportRouter } from './routes/report.js';
 import { env } from './config/env.js';
+import { isMongoConfigured } from './vector/mongo.js';
+import { isAiConfigured } from './ai/client.js';
 
 export function createApp() {
   const app = express();
@@ -29,20 +32,29 @@ export function createApp() {
   app.use(cookieParser());
   app.use(express.json());
 
-  const limiter = rateLimit({
+  const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
     message: {
-      error: {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: 'Too many requests, please try again later'
-      }
+      error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests, please try again later' }
     },
     standardHeaders: true,
     legacyHeaders: false
   });
 
-  app.use('/api/', limiter);
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: {
+      error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many login attempts, please try again later' }
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+
+  app.use('/api/', generalLimiter);
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/signup', authLimiter);
 
   app.use('/api/auth', authRouter);
   app.use('/api/profiles', profilesRouter);
@@ -53,9 +65,14 @@ export function createApp() {
   app.use('/api/explain', explainRouter);
   app.use('/api/interview', interviewRouter);
   app.use('/api/problems', problemsRouter);
+  app.use('/api/report', reportRouter);
 
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+  app.get('/api/health', (_req, res) => {
+    res.json({
+      status: 'ok',
+      mongoConfigured: isMongoConfigured(),
+      aiConfigured: isAiConfigured()
+    });
   });
 
   app.use(errorHandler);
