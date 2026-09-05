@@ -7,25 +7,16 @@ import { parseUrl } from '../profiles/url-parser.js';
 import { detectPlatform } from '../profiles/platform-detector.js';
 import { extractUsername } from '../profiles/username-extractor.js';
 import { Platform } from '../config/constants.js';
-import { CodeforcesAdapter } from '../adapters/codeforces/adapter.js';
+import { createAdapter } from '../adapters/index.js';
 import type { PlatformAccount } from '../types/platform.js';
-import type { PlatformAdapter } from '../adapters/interface.js';
 import { ValidationError, PlatformError } from '../utils/errors.js';
 
 const router = Router();
 
 router.use(requireAuth);
 
-function getAdapter(platform: Platform, username: string): PlatformAdapter | null {
-  switch (platform) {
-    case Platform.CODEFORCES:
-      return new CodeforcesAdapter(username);
-    case Platform.LEETCODE:
-    case Platform.CODECHEF:
-      return null;
-    default:
-      return null;
-  }
+function getAdapter(platform: Platform, username: string) {
+  return createAdapter(platform, username);
 }
 
 function getPlatformDisplayName(platform: string): string {
@@ -105,10 +96,7 @@ router.post('/', async (req: AuthRequest, res) => {
 
   const adapter = getAdapter(platform, username);
   if (!adapter) {
-    throw new PlatformError(
-      platform,
-      `${getPlatformDisplayName(platform)} adapter not yet implemented. Currently only Codeforces is supported.`
-    );
+    throw new PlatformError(platform, `No adapter available for platform: ${getPlatformDisplayName(platform)}`);
   }
 
   await adapter.connect();

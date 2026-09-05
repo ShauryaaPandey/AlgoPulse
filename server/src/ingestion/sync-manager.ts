@@ -11,7 +11,7 @@ import { Deduplicator } from './deduplicator.js';
 import { Fetcher } from './fetcher.js';
 import { logger } from '../utils/logger.js';
 import { Platform } from '../config/constants.js';
-import { CodeforcesAdapter } from '../adapters/codeforces/adapter.js';
+import { createAdapter } from '../adapters/index.js';
 import { SkillEngine } from '../analytics/skill-engine.js';
 import { DifficultyEngine } from '../analytics/difficulty-engine.js';
 import { WeaknessEngine } from '../analytics/weakness-engine.js';
@@ -41,12 +41,7 @@ export class SyncManager {
   }
 
   private getAdapter(platform: string, username: string): PlatformAdapter | null {
-    switch (platform) {
-      case Platform.CODEFORCES:
-        return new CodeforcesAdapter(username);
-      default:
-        return null;
-    }
+    return createAdapter(platform, username);
   }
 
   async syncPlatformAccount(

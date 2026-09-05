@@ -12,6 +12,12 @@ const addProfileSchema = z.object({
 
 type AddProfileForm = z.infer<typeof addProfileSchema>;
 
+const PLATFORM_BADGE: Record<string, { label: string; color: string; icon: string }> = {
+  codeforces: { label: 'Codeforces', color: 'bg-blue-100 text-blue-800', icon: '⚡' },
+  leetcode:   { label: 'LeetCode',   color: 'bg-yellow-100 text-yellow-800', icon: '🧩' },
+  codechef:   { label: 'CodeChef',   color: 'bg-amber-100 text-amber-800', icon: '👨‍🍳' }
+};
+
 interface SyncStatus {
   platform: string;
   username: string;
@@ -138,6 +144,11 @@ export function Profiles() {
               <p className="text-sm text-gray-600 mb-4">
                 Paste your coding profile URL from Codeforces, LeetCode, or CodeChef
               </p>
+              <div className="mb-4 flex flex-wrap gap-2 text-xs text-gray-500">
+                <span className="px-2 py-1 bg-gray-100 rounded font-mono">codeforces.com/profile/tourist</span>
+                <span className="px-2 py-1 bg-gray-100 rounded font-mono">leetcode.com/u/username/</span>
+                <span className="px-2 py-1 bg-gray-100 rounded font-mono">codechef.com/users/username</span>
+              </div>
 
               {error && (
                 <div className="rounded-md bg-red-50 p-4 mb-4">
@@ -170,7 +181,7 @@ export function Profiles() {
                   <input
                     {...register('url')}
                     type="text"
-                    placeholder="https://codeforces.com/profile/tourist"
+                    placeholder="https://codeforces.com/profile/tourist  or  https://leetcode.com/u/username/  or  https://www.codechef.com/users/username"
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   />
                   {errors.url && (
@@ -219,6 +230,7 @@ export function Profiles() {
                   {connectedProfiles.map((profile) => {
                     const status = getSyncStatusForPlatform(profile.platform);
                     const isSyncing = syncingPlatform === profile.platform;
+                    const badge = PLATFORM_BADGE[profile.platform] ?? { label: profile.platform, color: 'bg-gray-100 text-gray-700', icon: '💻' };
 
                     return (
                       <div
@@ -228,14 +240,15 @@ export function Profiles() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-base font-medium text-gray-900 capitalize">
-                                {profile.platform}
-                              </h3>
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badge.color}`}>
+                                <span>{badge.icon}</span>
+                                {badge.label}
+                              </span>
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 Verified
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className="text-sm font-medium text-gray-900 mb-1">
                               {profile.username}
                             </p>
                             {profile.profile_url && (
