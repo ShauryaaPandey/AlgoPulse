@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/cli/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/foundation.test.ts"
+    "test": "tsx --test tests/foundation.test.ts tests/auth/auth.test.ts"
   },
   "keywords": [],
   "author": "",
