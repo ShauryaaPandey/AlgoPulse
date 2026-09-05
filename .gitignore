@@ -5,3 +5,11 @@ dist/
 *.db-shm
 *.db-wal
 .DS_Store
+
+server/node_modules/
+server/dist/
+server/.env
+
+client/node_modules/
+client/dist/
+client/.env
