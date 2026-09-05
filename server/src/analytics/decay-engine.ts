@@ -40,15 +40,25 @@ export class DecayEngine {
 
   private getDecayData(userId: string): SkillDecayData[] {
     const query = `
-      SELECT 
-        ss.topic,
-        ss.score as currentScore,
-        (
-          SELECT MAX(sh.score)
-          FROM skill_history sh
-          WHERE sh.user_id = ss.user_id AND sh.topic = ss.topic
-        ) as historicalBestScore,
-        CAST((julianday('now') - julianday(
+      SELECT * FROM (
+        SELECT 
+          ss.topic,
+          ss.score as currentScore,
+          (
+            SELECT MAX(sh.score)
+            FROM skill_history sh
+            WHERE sh.user_id = ss.user_id AND sh.topic = ss.topic
+          ) as historicalBestScore,
+          CAST((julianday('now') - julianday(
+            (
+              SELECT MAX(s.submitted_at)
+              FROM submissions s
+              JOIN problems p ON s.problem_id = p.id
+              JOIN problem_topics pt ON p.id = pt.problem_id
+              JOIN platform_accounts pa ON s.platform_account_id = pa.id
+              WHERE pa.user_id = ss.user_id AND pt.topic = ss.topic
+            )
+          )) AS INTEGER) as daysSinceLastPractice,
           (
             SELECT MAX(s.submitted_at)
             FROM submissions s
@@ -56,19 +66,11 @@ export class DecayEngine {
             JOIN problem_topics pt ON p.id = pt.problem_id
             JOIN platform_accounts pa ON s.platform_account_id = pa.id
             WHERE pa.user_id = ss.user_id AND pt.topic = ss.topic
-          )
-        )) AS INTEGER) as daysSinceLastPractice,
-        (
-          SELECT MAX(s.submitted_at)
-          FROM submissions s
-          JOIN problems p ON s.problem_id = p.id
-          JOIN problem_topics pt ON p.id = pt.problem_id
-          JOIN platform_accounts pa ON s.platform_account_id = pa.id
-          WHERE pa.user_id = ss.user_id AND pt.topic = ss.topic
-        ) as lastPracticeDate
-      FROM skill_scores ss
-      WHERE ss.user_id = ?
-      HAVING daysSinceLastPractice IS NOT NULL
+          ) as lastPracticeDate
+        FROM skill_scores ss
+        WHERE ss.user_id = ?
+      ) sub
+      WHERE sub.daysSinceLastPractice IS NOT NULL
     `;
 
     return this.db.prepare(query).all(userId) as SkillDecayData[];

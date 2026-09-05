@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/foundation.test.ts tests/auth/auth.test.ts tests/profiles/url-parser.test.ts tests/profiles/platform-detector.test.ts tests/profiles/username-extractor.test.ts tests/adapters/codeforces-mapper.test.ts tests/analytics/skill-engine.test.ts tests/analytics/difficulty-engine.test.ts tests/analytics/weakness-engine.test.ts tests/analytics/failure-engine.test.ts"
+    "test": "tsx --test tests/foundation.test.ts tests/auth/auth.test.ts tests/profiles/url-parser.test.ts tests/profiles/platform-detector.test.ts tests/profiles/username-extractor.test.ts tests/adapters/codeforces-mapper.test.ts tests/analytics/skill-engine.test.ts tests/analytics/difficulty-engine.test.ts tests/analytics/weakness-engine.test.ts tests/analytics/failure-engine.test.ts tests/recommendations/problem-selector.test.ts tests/recommendations/recommendation-engine.test.ts"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

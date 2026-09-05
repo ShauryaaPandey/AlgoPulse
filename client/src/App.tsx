@@ -7,6 +7,7 @@ import { Signup } from './pages/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { Profiles } from './pages/Profiles';
 import { Analytics } from './pages/Analytics';
+import { Recommendations } from './pages/Recommendations';
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Analytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recommendations"
+              element={
+                <ProtectedRoute>
+                  <Recommendations />
                 </ProtectedRoute>
               }
             />

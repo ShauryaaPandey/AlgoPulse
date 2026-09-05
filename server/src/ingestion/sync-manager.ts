@@ -19,6 +19,7 @@ import { FailureEngine } from '../analytics/failure-engine.js';
 import { ProgressEngine } from '../analytics/progress-engine.js';
 import { DecayEngine } from '../analytics/decay-engine.js';
 import { ContestEngine } from '../analytics/contest-engine.js';
+import { RecommendationEngine } from '../recommendations/recommendation-engine.js';
 
 export interface SyncResult {
   platform: string;
@@ -235,9 +236,29 @@ export class SyncManager {
       const failureEngine = new FailureEngine(this.db);
       failureEngine.analyzeFailures(userId);
 
+      const recommendationEngine = new RecommendationEngine(this.db);
+      const solvedProblemIds = this.getRecentlyNewlySolvedProblemIds(userId);
+      if (solvedProblemIds.length > 0) {
+        recommendationEngine.autoCompleteForSolvedProblems(userId, solvedProblemIds);
+      }
+
       logger.info(`Analytics recomputed for user ${userId}`);
     } catch (error) {
       logger.error(`Analytics computation failed for user ${userId}:`, error);
     }
+  }
+
+  private getRecentlyNewlySolvedProblemIds(userId: string): string[] {
+    const rows = this.db
+      .prepare(`
+        SELECT DISTINCT s.problem_id
+        FROM submissions s
+        JOIN platform_accounts pa ON s.platform_account_id = pa.id
+        WHERE pa.user_id = ?
+          AND (s.verdict = 'Accepted' OR s.verdict = 'AC')
+          AND s.submitted_at >= datetime('now', '-2 days')
+      `)
+      .all(userId) as { problem_id: string }[];
+    return rows.map(r => r.problem_id);
   }
 }

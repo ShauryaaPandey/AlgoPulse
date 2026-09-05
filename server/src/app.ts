@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.js';
 import { profilesRouter } from './routes/profiles.js';
 import { syncRouter } from './routes/sync.js';
 import { analyticsRouter } from './routes/analytics.js';
+import { recommendationsRouter } from './routes/recommendations.js';
 import { env } from './config/env.js';
 
 export function createApp() {
@@ -43,6 +44,7 @@ export function createApp() {
   app.use('/api/profiles', profilesRouter);
   app.use('/api/sync', syncRouter);
   app.use('/api/analytics', analyticsRouter);
+  app.use('/api/recommendations', recommendationsRouter);
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });

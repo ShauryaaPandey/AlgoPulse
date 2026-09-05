@@ -46,7 +46,7 @@ export class WeaknessEngine {
       LEFT JOIN skill_scores ss ON ss.user_id = pa.user_id AND ss.topic = pt.topic
       WHERE pa.user_id = ? AND pt.topic IS NOT NULL
       GROUP BY pt.topic
-      HAVING totalCount >= 3
+      HAVING COUNT(*) >= 3
     `;
 
     return this.db.prepare(query).all(userId) as WeaknessData[];
