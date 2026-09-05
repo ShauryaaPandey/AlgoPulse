@@ -1,13 +1,14 @@
 {
   "name": "algopulse",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "tsx src/cli/index.ts",
     "build": "tsc",
     "start": "node dist/cli/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test"
+    "test": "tsx --test tests/foundation.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.4.1",
     "tsx": "^4.23.13",
