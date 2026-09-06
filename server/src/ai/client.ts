@@ -14,7 +14,7 @@ export function getGeminiProvider(): ReturnType<typeof createGoogleGenerativeAI>
   return _provider;
 }
 
-export function getGenerativeModel(modelId = 'gemini-1.5-flash') {
+export function getGenerativeModel(modelId = 'gemini-2.5-flash') {
   const provider = getGeminiProvider();
   return provider(modelId);
 }

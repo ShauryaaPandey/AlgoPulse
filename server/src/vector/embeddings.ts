@@ -2,10 +2,14 @@ import { google } from '@ai-sdk/google';
 import { embed, embedMany } from 'ai';
 import { env } from '../config/env.js';
 
-const EMBEDDING_MODEL = 'text-embedding-004';
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 const EMBEDDING_DIMENSIONS = 768;
 
 export { EMBEDDING_DIMENSIONS };
+
+const PROVIDER_OPTIONS = {
+  google: { outputDimensionality: EMBEDDING_DIMENSIONS }
+} as const;
 
 export function isEmbeddingConfigured(): boolean {
   return Boolean(env.GEMINI_API_KEY);
@@ -30,7 +34,7 @@ export async function embedText(text: string): Promise<number[]> {
   }
 
   const model = google.textEmbeddingModel(EMBEDDING_MODEL);
-  const { embedding } = await embed({ model, value: text });
+  const { embedding } = await embed({ model, value: text, providerOptions: PROVIDER_OPTIONS });
   return embedding;
 }
 
@@ -50,7 +54,7 @@ export async function embedManyTexts(texts: string[]): Promise<number[][]> {
   }
 
   const model = google.textEmbeddingModel(EMBEDDING_MODEL);
-  const { embeddings } = await embedMany({ model, values: texts });
+  const { embeddings } = await embedMany({ model, values: texts, providerOptions: PROVIDER_OPTIONS });
   return embeddings;
 }
 
