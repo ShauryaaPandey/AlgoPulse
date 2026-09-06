@@ -1,7 +1,9 @@
-interface SkeletonProps { className?: string }
+import type { CSSProperties } from 'react';
 
-export function Skeleton({ className = '' }: SkeletonProps) {
-  return <div className={`animate-pulse bg-gray-200 rounded-lg ${className}`} />;
+interface SkeletonProps { className?: string; style?: CSSProperties }
+
+export function Skeleton({ className = '', style }: SkeletonProps) {
+  return <div className={`animate-pulse bg-gray-200 rounded-lg ${className}`} style={style} />;
 }
 
 export function SkeletonCard() {

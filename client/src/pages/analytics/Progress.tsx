@@ -42,7 +42,7 @@ export function Progress() {
       const response = await api.get<ProgressSummary>('/analytics/progress');
       setData(response.data);
       if (response.data.topicProgress.length > 0) {
-        setSelectedTopic(response.data.topicProgress[0].topic);
+        setSelectedTopic(response.data.topicProgress[0]?.topic ?? null);
       }
     } catch (err) {
       setError(getErrorMessage(err));

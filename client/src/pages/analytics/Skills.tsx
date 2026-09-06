@@ -124,12 +124,14 @@ export function Skills() {
               <YAxis domain={[0, 100]} />
               <Tooltip 
                 content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
+                  if (active && payload && payload.length > 0) {
+                    const entry = payload[0];
+                    if (!entry) return null;
                     return (
                       <div className="bg-white p-3 border border-gray-200 rounded shadow">
-                        <p className="font-medium">{payload[0].payload.fullName}</p>
-                        <p className="text-sm text-indigo-600">Score: {payload[0].value}</p>
-                        <p className="text-sm text-gray-600">Confidence: {payload[0].payload.confidence}%</p>
+                        <p className="font-medium">{entry.payload.fullName}</p>
+                        <p className="text-sm text-indigo-600">Score: {entry.value}</p>
+                        <p className="text-sm text-gray-600">Confidence: {entry.payload.confidence}%</p>
                       </div>
                     );
                   }

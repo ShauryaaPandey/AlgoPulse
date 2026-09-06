@@ -71,7 +71,10 @@ export function Revise() {
     },
     select: d => {
       if (d.groups.length > 0 && openGroups.size === 0) {
-        setOpenGroups(new Set([`${d.groups[0].topic}::${d.groups[0].failureType}`]));
+        const first = d.groups[0];
+        if (first) {
+          setOpenGroups(new Set([`${first.topic}::${first.failureType}`]));
+        }
       }
       return d;
     }

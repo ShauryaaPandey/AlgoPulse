@@ -55,8 +55,7 @@ export function Profiles() {
     try {
       const response = await api.get<{ status: SyncStatus[] }>('/sync/status');
       setSyncStatus(response.data.status);
-    } catch (err) {
-      console.error('Failed to fetch sync status:', err);
+    } catch {
     }
   };
 

@@ -162,12 +162,14 @@ export function Contests() {
             <YAxis domain={[0, 100]} label={{ value: 'Solve Rate (%)', angle: -90, position: 'insideLeft' }} />
             <Tooltip 
               content={({ active, payload }) => {
-                if (active && payload && payload.length) {
+                if (active && payload && payload.length > 0) {
+                  const entry = payload[0];
+                  if (!entry) return null;
                   return (
                     <div className="bg-white p-3 border border-gray-200 rounded shadow">
-                      <p className="font-medium">{payload[0].payload.index}</p>
-                      <p className="text-sm text-indigo-600">Solve Rate: {payload[0].value}%</p>
-                      <p className="text-sm text-gray-600">Attempts: {payload[0].payload.attempts}</p>
+                      <p className="font-medium">{entry.payload.index}</p>
+                      <p className="text-sm text-indigo-600">Solve Rate: {entry.value}%</p>
+                      <p className="text-sm text-gray-600">Attempts: {entry.payload.attempts}</p>
                     </div>
                   );
                 }

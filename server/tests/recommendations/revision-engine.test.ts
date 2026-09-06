@@ -31,15 +31,14 @@ describe('RevisionEngine', () => {
 
   afterEach(() => db.close());
 
-  function insertFailedProblem(topic: string, failureCount: number): string {
+  function insertFailedProblem(topic: string, failureCount: number, verdict = 'Wrong Answer'): string {
     const pid = uuidv4();
     const now = new Date().toISOString();
     db.prepare('INSERT INTO problems VALUES (?,?,?,?,?,?,?,?,?)').run(pid, 'cf', uuidv4(), `P-${topic}`, null, 'Medium', 1400, null, now);
     db.prepare('INSERT INTO problem_topics VALUES (?,?,?,?)').run(uuidv4(), pid, topic, 1.0);
     for (let i = 0; i < failureCount; i++) {
-      db.prepare('INSERT INTO submissions VALUES (?,?,?,?,?,?,?,?)').run(uuidv4(), pid, accountId, uuidv4(), now, 'C++', 'Wrong Answer', 1);
+      db.prepare('INSERT INTO submissions VALUES (?,?,?,?,?,?,?,?)').run(uuidv4(), pid, accountId, uuidv4(), now, 'C++', verdict, 1);
     }
-    db.prepare('INSERT INTO failure_patterns VALUES (?,?,?,?,?,?,?,?)').run(uuidv4(), userId, topic, 'logic-errors', failureCount, failureCount / 10, now, now);
     return pid;
   }
 
@@ -60,11 +59,23 @@ describe('RevisionEngine', () => {
     assert.ok(result.groups.length >= 1, 'Should have at least one group');
     const graphsGroup = result.groups.find(g => g.topic === 'Graphs');
     assert.ok(graphsGroup, 'Graphs group should exist');
-    assert.strictEqual(graphsGroup!.failureType, 'logic-errors');
+    assert.strictEqual(graphsGroup!.failureType, 'graph-logic-errors');
+  });
+
+  it('should classify generic topics as logic-errors', () => {
+    insertFailedProblem('Greedy', 4);
+
+    const engine = new RevisionEngine(db);
+    const result = engine.buildRevisionPlan(userId);
+
+    assert.ok(result.groups.length >= 1, 'Should have at least one group');
+    const greedyGroup = result.groups.find(g => g.topic === 'Greedy');
+    assert.ok(greedyGroup, 'Greedy group should exist');
+    assert.strictEqual(greedyGroup!.failureType, 'logic-errors');
   });
 
   it('should not include solved problems in revision list', () => {
-    const pid = insertFailedProblem('DP', 4);
+    const pid = insertFailedProblem('Greedy', 4);
     const now = new Date().toISOString();
     db.prepare('INSERT INTO submissions VALUES (?,?,?,?,?,?,?,?)').run(uuidv4(), pid, accountId, uuidv4(), now, 'C++', 'Accepted', 1);
 
@@ -76,10 +87,8 @@ describe('RevisionEngine', () => {
   });
 
   it('should sort groups by severity descending', () => {
-    insertFailedProblem('Low Severity Topic', 3);
-    db.prepare('UPDATE failure_patterns SET severity = 1.0 WHERE topic = ?').run('Low Severity Topic');
-    insertFailedProblem('High Severity Topic', 8);
-    db.prepare('UPDATE failure_patterns SET severity = 8.0 WHERE topic = ?').run('High Severity Topic');
+    insertFailedProblem('Greedy', 3);
+    insertFailedProblem('Greedy', 8);
 
     const engine = new RevisionEngine(db);
     const result = engine.buildRevisionPlan(userId);
