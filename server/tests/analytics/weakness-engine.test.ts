@@ -241,4 +241,26 @@ describe('WeaknessEngine', () => {
       assert.ok(weakness);
     }
   });
+
+  it('should not crash and should return no weaknesses when a problem has no topic rows', () => {
+    const problemId = uuidv4();
+    const now = new Date().toISOString();
+
+    db.prepare('INSERT INTO problems (id, platform, external_id, title, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      problemId, 'codeforces', 'CF-NOTOPIC', 'Topicless Problem', now
+    );
+
+    for (let i = 0; i < 5; i++) {
+      db.prepare('INSERT INTO submissions (id, problem_id, platform_account_id, external_submission_id, submitted_at, language, verdict, attempt_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        uuidv4(), problemId, platformAccountId, `SUB-NOTOPIC-${i}`, now, 'C++', 'Wrong Answer', 1
+      );
+    }
+
+    const weaknessEngine = new WeaknessEngine(db);
+    let weaknesses: ReturnType<typeof weaknessEngine.computeWeaknesses> | undefined;
+    assert.doesNotThrow(() => {
+      weaknesses = weaknessEngine.computeWeaknesses(userId);
+    });
+    assert.strictEqual(weaknesses!.length, 0);
+  });
 });

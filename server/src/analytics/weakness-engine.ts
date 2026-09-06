@@ -41,10 +41,10 @@ export class WeaknessEngine {
         AVG(s.attempt_number) as avgAttempts
       FROM submissions s
       JOIN problems p ON s.problem_id = p.id
-      LEFT JOIN problem_topics pt ON p.id = pt.problem_id
+      INNER JOIN problem_topics pt ON p.id = pt.problem_id
       JOIN platform_accounts pa ON s.platform_account_id = pa.id
       LEFT JOIN skill_scores ss ON ss.user_id = pa.user_id AND ss.topic = pt.topic
-      WHERE pa.user_id = ? AND pt.topic IS NOT NULL
+      WHERE pa.user_id = ?
       GROUP BY pt.topic
       HAVING COUNT(*) >= 3
     `;

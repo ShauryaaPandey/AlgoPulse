@@ -74,13 +74,12 @@ export interface LeetCodeProblemData {
 }
 
 export interface LeetCodeAllProblemsData {
-  problemsetQuestionList: {
-    total: number;
+  problemsetQuestionListV2: {
     questions: Array<{
-      questionId: string;
+      questionFrontendId: string;
       title: string;
       titleSlug: string;
-      difficulty: 'Easy' | 'Medium' | 'Hard';
+      difficulty: 'EASY' | 'MEDIUM' | 'HARD';
       topicTags: Array<{ name: string; slug: string }>;
     }>;
   };

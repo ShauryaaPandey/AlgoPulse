@@ -28,8 +28,12 @@ router.get('/:id/similar', async (req: AuthRequest, res) => {
   const db = getDb();
   const limit = req.query['limit'] ? Math.min(20, Math.max(1, Number(req.query['limit']))) : 10;
 
-  const results = await findSimilarProblems(id, db, req.userId!, limit);
-  res.json({ results, problemId: id });
+  try {
+    const results = await findSimilarProblems(id, db, req.userId!, limit);
+    res.json({ results, problemId: id });
+  } catch {
+    res.json({ results: [], problemId: id, message: 'Similar problems temporarily unavailable.' });
+  }
 });
 
 export { router as problemsRouter };

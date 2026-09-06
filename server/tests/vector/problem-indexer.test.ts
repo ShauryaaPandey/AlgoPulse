@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach, mock } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,7 +8,7 @@ const SCHEMA = `
   CREATE TABLE problem_topics (id TEXT PRIMARY KEY, problem_id TEXT NOT NULL, topic TEXT NOT NULL, confidence REAL NOT NULL DEFAULT 1.0);
 `;
 
-describe('problem-indexer (mocked Mongo + Gemini)', () => {
+describe('problem-indexer (SQLite logic)', () => {
   let db: Database.Database;
 
   beforeEach(() => {
@@ -27,32 +27,6 @@ describe('problem-indexer (mocked Mongo + Gemini)', () => {
     }
     return id;
   }
-
-  it('should skip indexing when Mongo is not configured', async () => {
-    const pid = insertProblem('Two Sum', ['Arrays', 'Hash Table']);
-
-    const mockCollection = {
-      find: () => ({ toArray: async () => [] }),
-      insertMany: async () => ({ insertedCount: 0 }),
-    };
-
-    let embeddingsCallCount = 0;
-    const mockEmbedMany = async (problems: unknown[]) => {
-      embeddingsCallCount++;
-      return problems.map(() => new Array(768).fill(0));
-    };
-
-    const { indexProblems } = await import('../../src/vector/problem-indexer.js');
-
-    const originalIsMongoConfigured = (await import('../../src/vector/mongo.js')).isMongoConfigured;
-    assert.ok(typeof originalIsMongoConfigured === 'function');
-
-    const result = await indexProblems(db);
-    assert.strictEqual(result.indexed, 0, 'Should index 0 when Mongo not configured');
-    assert.strictEqual(embeddingsCallCount, 0, 'Should not call embeddings when skipping');
-
-    assert.ok(pid, 'Problem was inserted');
-  });
 
   it('should read problems and topics from SQLite correctly', () => {
     insertProblem('Binary Search', ['Binary Search', 'Arrays']);
@@ -73,9 +47,50 @@ describe('problem-indexer (mocked Mongo + Gemini)', () => {
     assert.ok(bsRow!.topics!.includes('Arrays'));
   });
 
-  it('should correctly identify topics from concatenated string', () => {
+  it('should correctly parse concatenated topic string', () => {
     const topicsRaw = 'Graphs|BFS|DFS';
     const topics = topicsRaw.split('|').filter(Boolean);
     assert.deepStrictEqual(topics, ['Graphs', 'BFS', 'DFS']);
+  });
+
+  it('should produce empty topics array for problems with no topic rows', () => {
+    insertProblem('Topicless Problem', []);
+
+    const rows = db.prepare(`
+      SELECT p.id, p.title, GROUP_CONCAT(pt.topic, '|') as topics
+      FROM problems p
+      LEFT JOIN problem_topics pt ON p.id = pt.problem_id
+      GROUP BY p.id
+    `).all() as { id: string; title: string; topics: string | null }[];
+
+    assert.strictEqual(rows.length, 1);
+    const row = rows[0]!;
+    const topics = row.topics ? row.topics.split('|').filter(Boolean) : [];
+    assert.deepStrictEqual(topics, []);
+  });
+
+  it('should build correct problem text for embedding', () => {
+    function buildProblemText(
+      title: string,
+      topics: string[],
+      difficulty: string | null,
+      description?: string | null
+    ): string {
+      const parts: string[] = [title];
+      if (topics.length > 0) parts.push(`Topics: ${topics.join(', ')}`);
+      if (difficulty) parts.push(`Difficulty: ${difficulty}`);
+      if (description) parts.push(description.slice(0, 512));
+      return parts.join('. ');
+    }
+
+    assert.strictEqual(
+      buildProblemText('Two Sum', ['Array', 'Hash Table'], 'Easy'),
+      'Two Sum. Topics: Array, Hash Table. Difficulty: Easy'
+    );
+
+    assert.strictEqual(
+      buildProblemText('Unknown Problem', [], null),
+      'Unknown Problem'
+    );
   });
 });

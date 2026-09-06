@@ -91,19 +91,21 @@ export function mapLanguage(lang: string): string {
 }
 
 export function mapProblemToPlatformProblem(problem: {
-  questionId: string;
+  questionFrontendId?: string;
+  questionId?: string;
   title: string;
   titleSlug: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'Easy' | 'Medium' | 'Hard';
   topicTags: Array<{ name: string; slug: string }>;
 }): PlatformProblem {
+  const normalizedDifficulty = normalizeDifficulty(problem.difficulty);
   return {
     platform: Platform.LEETCODE,
     external_id: problem.titleSlug,
     title: problem.title,
     url: `https://leetcode.com/problems/${problem.titleSlug}/`,
-    difficulty: problem.difficulty,
-    rating: difficultyToRating(problem.difficulty),
+    difficulty: normalizedDifficulty,
+    rating: difficultyToRating(normalizedDifficulty),
     description: null,
     topics: problem.topicTags.map(t => t.name)
   };
@@ -111,6 +113,13 @@ export function mapProblemToPlatformProblem(problem: {
 
 export function mapContests(): PlatformContest[] {
   return [];
+}
+
+function normalizeDifficulty(difficulty: string): 'Easy' | 'Medium' | 'Hard' {
+  const upper = difficulty.toUpperCase();
+  if (upper === 'EASY' || upper === 'Easy') return 'Easy';
+  if (upper === 'MEDIUM' || upper === 'Medium') return 'Medium';
+  return 'Hard';
 }
 
 function difficultyToRating(difficulty: 'Easy' | 'Medium' | 'Hard'): number {

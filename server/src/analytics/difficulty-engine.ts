@@ -50,7 +50,7 @@ export class DifficultyEngine {
         s.submitted_at
       FROM submissions s
       JOIN problems p ON s.problem_id = p.id
-      LEFT JOIN problem_topics pt ON p.id = pt.problem_id
+      INNER JOIN problem_topics pt ON p.id = pt.problem_id
       JOIN platform_accounts pa ON s.platform_account_id = pa.id
       WHERE pa.user_id = ? AND (s.verdict = 'Accepted' OR s.verdict = 'AC')
       ORDER BY s.submitted_at ASC

@@ -34,15 +34,14 @@ router.get('/', async (req: AuthRequest, res) => {
   const maxRating = req.query['maxRating'] ? Number(req.query['maxRating']) : undefined;
   const limit = req.query['limit'] ? Math.min(50, Math.max(1, Number(req.query['limit']))) : 20;
 
-  const results = await vectorSearch(q.trim(), db, req.userId!, {
-    topic,
-    platform,
-    difficulty,
-    minRating,
-    maxRating
-  }, limit);
-
-  res.json({ results, query: q.trim() });
+  try {
+    const results = await vectorSearch(q.trim(), db, req.userId!, {
+      topic, platform, difficulty, minRating, maxRating
+    }, limit);
+    res.json({ results, query: q.trim() });
+  } catch {
+    res.json({ results: [], query: q.trim(), message: 'Search temporarily unavailable.' });
+  }
 });
 
 router.get('/similar/:id', async (req: AuthRequest, res) => {
@@ -64,9 +63,12 @@ router.get('/similar/:id', async (req: AuthRequest, res) => {
   const db = getDb();
   const limit = req.query['limit'] ? Math.min(20, Math.max(1, Number(req.query['limit']))) : 10;
 
-  const results = await findSimilarProblems(problemId, db, req.userId!, limit);
-
-  res.json({ results, problemId });
+  try {
+    const results = await findSimilarProblems(problemId, db, req.userId!, limit);
+    res.json({ results, problemId });
+  } catch {
+    res.json({ results: [], problemId, message: 'Similar problems temporarily unavailable.' });
+  }
 });
 
 export { router as searchRouter };

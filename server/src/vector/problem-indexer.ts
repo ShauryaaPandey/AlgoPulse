@@ -21,8 +21,15 @@ export async function indexProblems(db: Database.Database): Promise<{ indexed: n
     return { indexed: 0, skipped: 0 };
   }
 
-  const collection = await getProblemsCollection();
-  const allProblems = getUnindexedProblems(db, collection);
+  let collection: Awaited<ReturnType<typeof getProblemsCollection>>;
+  try {
+    collection = await getProblemsCollection();
+  } catch (error) {
+    logger.warn('Vector indexing skipped: could not connect to MongoDB:', (error as Error).message);
+    return { indexed: 0, skipped: 0 };
+  }
+
+  const allProblems = getUnindexedProblems(db);
 
   let indexed = 0;
   let skipped = 0;
@@ -106,7 +113,7 @@ export async function indexSingleProblem(db: Database.Database, problemId: strin
   return true;
 }
 
-function getUnindexedProblems(db: Database.Database, _collection: unknown): SqliteProblem[] {
+function getUnindexedProblems(db: Database.Database): SqliteProblem[] {
   return db
     .prepare(`
       SELECT p.id, p.platform, p.title, p.difficulty, p.rating, p.description,

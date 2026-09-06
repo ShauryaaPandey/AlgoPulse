@@ -168,3 +168,51 @@ describe('LeetCode Mapper', () => {
     });
   });
 });
+
+describe('LeetCode problemset query shape', () => {
+  it('should correctly parse problemsetQuestionListV2 response structure', () => {
+    const mockResponse: import('../../src/adapters/leetcode/types.js').LeetCodeAllProblemsData = {
+      problemsetQuestionListV2: {
+        questions: [
+          {
+            questionFrontendId: '1',
+            title: 'Two Sum',
+            titleSlug: 'two-sum',
+            difficulty: 'EASY',
+            topicTags: [{ name: 'Array', slug: 'array' }, { name: 'Hash Table', slug: 'hash-table' }]
+          },
+          {
+            questionFrontendId: '42',
+            title: 'Trapping Rain Water',
+            titleSlug: 'trapping-rain-water',
+            difficulty: 'HARD',
+            topicTags: [{ name: 'Two Pointers', slug: 'two-pointers' }]
+          }
+        ]
+      }
+    };
+
+    const questions = mockResponse.problemsetQuestionListV2?.questions ?? [];
+    assert.strictEqual(questions.length, 2);
+
+    const mapped = questions.map(q => mapProblemToPlatformProblem(q));
+    assert.strictEqual(mapped[0]!.platform, 'leetcode');
+    assert.strictEqual(mapped[0]!.external_id, 'two-sum');
+    assert.strictEqual(mapped[0]!.title, 'Two Sum');
+    assert.strictEqual(mapped[0]!.difficulty, 'Easy');
+    assert.deepStrictEqual(mapped[0]!.topics, ['Array', 'Hash Table']);
+
+    assert.strictEqual(mapped[1]!.difficulty, 'Hard');
+    assert.strictEqual(mapped[1]!.rating, 2000);
+  });
+
+  it('should return empty array when problemsetQuestionListV2 has no questions', () => {
+    const mockResponse: import('../../src/adapters/leetcode/types.js').LeetCodeAllProblemsData = {
+      problemsetQuestionListV2: {
+        questions: []
+      }
+    };
+    const questions = mockResponse.problemsetQuestionListV2?.questions ?? [];
+    assert.strictEqual(questions.length, 0);
+  });
+});

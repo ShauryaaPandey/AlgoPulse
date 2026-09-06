@@ -250,4 +250,29 @@ describe('SkillEngine', () => {
     const historyCount = db.prepare('SELECT COUNT(*) as count FROM skill_history WHERE user_id = ? AND topic = ?').get(userId, 'Arrays') as any;
     assert.strictEqual(historyCount.count, 1);
   });
+
+  it('should not crash and should return no scores when a problem has zero topic rows', () => {
+    const problemId = uuidv4();
+    const now = new Date().toISOString();
+
+    db.prepare('INSERT INTO problems (id, platform, external_id, title, rating, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      problemId, 'codeforces', 'CF-NOTOPICS', 'Topicless Problem', 1400, now
+    );
+
+    for (let i = 0; i < 5; i++) {
+      db.prepare('INSERT INTO submissions (id, problem_id, platform_account_id, external_submission_id, submitted_at, language, verdict, attempt_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        uuidv4(), problemId, platformAccountId, `SUB-NOTOPIC-${i}`, now, 'C++', 'Accepted', 1
+      );
+    }
+
+    const skillEngine = new SkillEngine(db);
+    let scores: { topic: string; score: number; confidence: number }[] | undefined;
+    assert.doesNotThrow(() => {
+      scores = skillEngine.computeSkillScores(userId);
+    });
+    assert.strictEqual(scores!.length, 0);
+
+    const nullScores = db.prepare('SELECT * FROM skill_scores WHERE user_id = ? AND topic IS NULL').all(userId) as unknown[];
+    assert.strictEqual(nullScores.length, 0);
+  });
 });

@@ -3,6 +3,7 @@ import type { PlatformProfile, PlatformContest } from '../../types/platform.js';
 import type { PlatformSubmission } from '../../types/submission.js';
 import type { PlatformProblem } from '../../types/problem.js';
 import { LeetCodeClient } from './client.js';
+import { logger } from '../../utils/logger.js';
 import {
   mapUserToProfile,
   mapSubmissionToplatformSubmission,
@@ -48,9 +49,14 @@ export class LeetCodeAdapter implements PlatformAdapter {
   }
 
   async getProblems(): Promise<PlatformProblem[]> {
-    const data = await this.client.getProblemset(100, 0);
-    const questions = data.problemsetQuestionList?.questions ?? [];
-    return questions.map(mapProblemToPlatformProblem);
+    try {
+      const data = await this.client.getProblemset(100, 0);
+      const questions = data.problemsetQuestionListV2?.questions ?? [];
+      return questions.map(mapProblemToPlatformProblem);
+    } catch (error) {
+      logger.warn(`LeetCode getProblems failed — returning empty list:`, error instanceof Error ? error.message : error);
+      return [];
+    }
   }
 
   async disconnect(): Promise<void> {

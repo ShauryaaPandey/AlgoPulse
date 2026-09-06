@@ -205,4 +205,24 @@ describe('DifficultyEngine', () => {
     assert.strictEqual(ceilings.length, 1);
     assert.strictEqual(ceilings[0].maxRating, 1500);
   });
+
+  it('should not crash and should return no ceilings when a problem has no topic rows', () => {
+    const problemId = uuidv4();
+    const now = new Date().toISOString();
+
+    db.prepare('INSERT INTO problems (id, platform, external_id, title, rating, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      problemId, 'codeforces', 'CF-NOTOPIC', 'Topicless Problem', 1500, now
+    );
+
+    db.prepare('INSERT INTO submissions (id, problem_id, platform_account_id, external_submission_id, submitted_at, language, verdict, attempt_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      uuidv4(), problemId, platformAccountId, 'SUB-NOTOPIC', now, 'C++', 'Accepted', 1
+    );
+
+    const difficultyEngine = new DifficultyEngine(db);
+    let ceilings: ReturnType<typeof difficultyEngine.computeDifficultyCeilings> | undefined;
+    assert.doesNotThrow(() => {
+      ceilings = difficultyEngine.computeDifficultyCeilings(userId);
+    });
+    assert.strictEqual(ceilings!.length, 0);
+  });
 });

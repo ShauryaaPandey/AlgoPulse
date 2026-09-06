@@ -49,16 +49,15 @@ const RECENT_SUBMISSIONS_QUERY = `
 `;
 
 const PROBLEMSET_QUERY = `
-  query problemsetQuestionList($limit: Int, $skip: Int) {
-    problemsetQuestionList: questionList(
-      categorySlug: ""
+  query problemsetQuestionListV2($categorySlug: String, $limit: Int, $skip: Int) {
+    problemsetQuestionListV2(
+      categorySlug: $categorySlug
       limit: $limit
       skip: $skip
-      filters: {}
+      filters: { filterCombineType: ALL }
     ) {
-      total: totalNum
-      questions: data {
-        questionId: frontendQuestionId
+      questions {
+        questionFrontendId
         title
         titleSlug
         difficulty
@@ -139,6 +138,10 @@ export class LeetCodeClient {
   }
 
   async getProblemset(limit = 100, skip = 0): Promise<LeetCodeAllProblemsData> {
-    return this.graphql<LeetCodeAllProblemsData>(PROBLEMSET_QUERY, { limit, skip });
+    return this.graphql<LeetCodeAllProblemsData>(PROBLEMSET_QUERY, {
+      categorySlug: '',
+      limit,
+      skip
+    });
   }
 }

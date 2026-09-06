@@ -1,6 +1,6 @@
-import { google } from '@ai-sdk/google';
 import { embed, embedMany } from 'ai';
 import { env } from '../config/env.js';
+import { getGeminiProvider } from '../ai/client.js';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 const EMBEDDING_DIMENSIONS = 768;
@@ -33,7 +33,7 @@ export async function embedText(text: string): Promise<number[]> {
     throw new Error('GEMINI_API_KEY is not configured. Set it in your .env to enable embeddings.');
   }
 
-  const model = google.textEmbeddingModel(EMBEDDING_MODEL);
+  const model = getGeminiProvider().textEmbeddingModel(EMBEDDING_MODEL);
   const { embedding } = await embed({ model, value: text, providerOptions: PROVIDER_OPTIONS });
   return embedding;
 }
@@ -53,7 +53,7 @@ export async function embedManyTexts(texts: string[]): Promise<number[][]> {
     throw new Error('GEMINI_API_KEY is not configured.');
   }
 
-  const model = google.textEmbeddingModel(EMBEDDING_MODEL);
+  const model = getGeminiProvider().textEmbeddingModel(EMBEDDING_MODEL);
   const { embeddings } = await embedMany({ model, values: texts, providerOptions: PROVIDER_OPTIONS });
   return embeddings;
 }

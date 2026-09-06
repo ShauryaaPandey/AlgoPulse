@@ -26,6 +26,7 @@ export class SkillEngine {
     const topicMap = new Map<string, SubmissionData[]>();
 
     for (const sub of submissions) {
+      if (!sub.topic) continue;
       if (!topicMap.has(sub.topic)) {
         topicMap.set(sub.topic, []);
       }
@@ -57,7 +58,7 @@ export class SkillEngine {
         cp.problem_index
       FROM submissions s
       JOIN problems p ON s.problem_id = p.id
-      LEFT JOIN problem_topics pt ON p.id = pt.problem_id
+      INNER JOIN problem_topics pt ON p.id = pt.problem_id
       LEFT JOIN platform_accounts pa ON s.platform_account_id = pa.id
       LEFT JOIN contest_submissions cs ON s.id = cs.submission_id
       LEFT JOIN contest_problems cp ON cs.contest_id = cp.contest_id AND s.problem_id = cp.problem_id

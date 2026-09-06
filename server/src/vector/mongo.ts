@@ -13,27 +13,54 @@ export interface ProblemDocument {
   indexedAt: string;
 }
 
-let client: MongoClient | null = null;
-let db: Db | null = null;
+let clientPromise: Promise<MongoClient> | null = null;
+
+function createClient(): Promise<MongoClient> {
+  if (!env.MONGODB_URI) {
+    return Promise.reject(new Error('MONGODB_URI is not configured.'));
+  }
+
+  const c = new MongoClient(env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 30000,
+    tls: true,
+    retryWrites: true,
+    retryReads: true
+  });
+
+  return c.connect().then(() => {
+    logger.info('MongoDB connected');
+    c.on('close', () => {
+      logger.warn('MongoDB connection closed — will reconnect on next call');
+      clientPromise = null;
+    });
+    c.on('error', (err) => {
+      logger.warn('MongoDB client error — resetting connection:', (err as Error).message);
+      clientPromise = null;
+    });
+    return c;
+  });
+}
 
 export async function getMongoClient(): Promise<MongoClient> {
-  if (client) return client;
-
   if (!env.MONGODB_URI) {
     throw new Error('MONGODB_URI is not configured. Set it in your .env to enable vector search.');
   }
 
-  client = new MongoClient(env.MONGODB_URI);
-  await client.connect();
-  logger.info('MongoDB connected');
-  return client;
+  if (!clientPromise) {
+    clientPromise = createClient().catch(err => {
+      clientPromise = null;
+      throw err;
+    });
+  }
+
+  return clientPromise;
 }
 
 export async function getMongoDb(): Promise<Db> {
-  if (db) return db;
   const c = await getMongoClient();
-  db = c.db(env.MONGODB_DATABASE);
-  return db;
+  return c.db(env.MONGODB_DATABASE);
 }
 
 export async function getProblemsCollection(): Promise<Collection<ProblemDocument>> {
@@ -42,11 +69,15 @@ export async function getProblemsCollection(): Promise<Collection<ProblemDocumen
 }
 
 export async function closeMongoClient(): Promise<void> {
-  if (client) {
-    await client.close();
-    client = null;
-    db = null;
-    logger.info('MongoDB disconnected');
+  if (clientPromise) {
+    try {
+      const c = await clientPromise;
+      await c.close();
+    } catch {
+    } finally {
+      clientPromise = null;
+      logger.info('MongoDB disconnected');
+    }
   }
 }
 

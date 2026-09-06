@@ -2,6 +2,7 @@ import type Database from 'better-sqlite3';
 import { getProblemsCollection, isMongoConfigured } from './mongo.js';
 import { embedText, isEmbeddingConfigured } from './embeddings.js';
 import { indexSingleProblem } from './problem-indexer.js';
+import { logger } from '../utils/logger.js';
 
 export interface VectorSearchFilters {
   topic?: string;
@@ -35,62 +36,54 @@ export async function vectorSearch(
     return [];
   }
 
-  const queryEmbedding = await embedText(queryText);
-  const solvedIds = getSolvedProblemIds(db, userId);
+  try {
+    const queryEmbedding = await embedText(queryText);
+    const solvedIds = getSolvedProblemIds(db, userId);
+    const collection = await getProblemsCollection();
 
-  const collection = await getProblemsCollection();
+    const vectorStage: Record<string, unknown> = {
+      index: ATLAS_INDEX_NAME,
+      path: 'embedding',
+      queryVector: queryEmbedding,
+      numCandidates: limit * 10,
+      limit: limit * 2
+    };
 
-  const vectorStage: Record<string, unknown> = {
-    index: ATLAS_INDEX_NAME,
-    path: 'embedding',
-    queryVector: queryEmbedding,
-    numCandidates: limit * 10,
-    limit: limit * 2
-  };
+    const filterClauses: Record<string, unknown>[] = [];
+    if (filters.topic) filterClauses.push({ topics: filters.topic });
+    if (filters.platform) filterClauses.push({ platform: filters.platform });
+    if (filters.difficulty) filterClauses.push({ difficulty: filters.difficulty });
+    if (filters.minRating !== undefined || filters.maxRating !== undefined) {
+      const rf: Record<string, number> = {};
+      if (filters.minRating !== undefined) rf['$gte'] = filters.minRating;
+      if (filters.maxRating !== undefined) rf['$lte'] = filters.maxRating;
+      filterClauses.push({ rating: rf });
+    }
 
-  const filterClauses: Record<string, unknown>[] = [];
+    if (filterClauses.length > 0) {
+      vectorStage['filter'] = filterClauses.length === 1 ? filterClauses[0] : { $and: filterClauses };
+    }
 
-  if (filters.topic) {
-    filterClauses.push({ topics: filters.topic });
+    const pipeline = [
+      { $vectorSearch: vectorStage },
+      { $addFields: { score: { $meta: 'vectorSearchScore' } } },
+      { $project: { _id: 0, problemId: 1, platform: 1, title: 1, topics: 1, difficulty: 1, rating: 1, score: 1 } }
+    ];
+
+    const rawResults = await collection.aggregate<{
+      problemId: string; platform: string; title: string;
+      topics: string[]; difficulty: string | null; rating: number | null; score: number;
+    }>(pipeline).toArray();
+
+    const solvedSet = new Set(solvedIds);
+    return rawResults
+      .filter(r => !solvedSet.has(r.problemId))
+      .slice(0, limit)
+      .map(r => ({ ...r, url: buildProblemUrl(r.platform, r.problemId) }));
+  } catch (error) {
+    logger.warn('Vector search unavailable:', (error as Error).message);
+    return [];
   }
-  if (filters.platform) {
-    filterClauses.push({ platform: filters.platform });
-  }
-  if (filters.difficulty) {
-    filterClauses.push({ difficulty: filters.difficulty });
-  }
-  if (filters.minRating !== undefined || filters.maxRating !== undefined) {
-    const ratingFilter: Record<string, number> = {};
-    if (filters.minRating !== undefined) ratingFilter['$gte'] = filters.minRating;
-    if (filters.maxRating !== undefined) ratingFilter['$lte'] = filters.maxRating;
-    filterClauses.push({ rating: ratingFilter });
-  }
-
-  if (filterClauses.length > 0) {
-    vectorStage['filter'] = filterClauses.length === 1 ? filterClauses[0] : { $and: filterClauses };
-  }
-
-  const pipeline = [
-    { $vectorSearch: vectorStage },
-    { $addFields: { score: { $meta: 'vectorSearchScore' } } },
-    { $project: { _id: 0, problemId: 1, platform: 1, title: 1, topics: 1, difficulty: 1, rating: 1, score: 1 } }
-  ];
-
-  const rawResults = await collection.aggregate<{
-    problemId: string; platform: string; title: string;
-    topics: string[]; difficulty: string | null; rating: number | null; score: number;
-  }>(pipeline).toArray();
-
-  const solvedSet = new Set(solvedIds);
-
-  const filtered = rawResults
-    .filter(r => !solvedSet.has(r.problemId))
-    .slice(0, limit);
-
-  return filtered.map(r => ({
-    ...r,
-    url: buildProblemUrl(r.platform, r.problemId)
-  }));
 }
 
 export async function findSimilarProblems(
@@ -103,45 +96,49 @@ export async function findSimilarProblems(
     return [];
   }
 
-  const collection = await getProblemsCollection();
+  try {
+    const collection = await getProblemsCollection();
 
-  let doc = await collection.findOne({ problemId });
+    let doc = await collection.findOne({ problemId });
 
-  if (!doc) {
-    await indexSingleProblem(db, problemId);
-    doc = await collection.findOne({ problemId });
+    if (!doc) {
+      await indexSingleProblem(db, problemId);
+      doc = await collection.findOne({ problemId });
+    }
+
+    if (!doc) return [];
+
+    const queryEmbedding = doc.embedding;
+    const solvedIds = getSolvedProblemIds(db, userId);
+
+    const pipeline = [
+      {
+        $vectorSearch: {
+          index: ATLAS_INDEX_NAME,
+          path: 'embedding',
+          queryVector: queryEmbedding,
+          numCandidates: (limit + 1) * 10,
+          limit: limit + 1
+        }
+      },
+      { $addFields: { score: { $meta: 'vectorSearchScore' } } },
+      { $project: { _id: 0, problemId: 1, platform: 1, title: 1, topics: 1, difficulty: 1, rating: 1, score: 1 } }
+    ];
+
+    const rawResults = await collection.aggregate<{
+      problemId: string; platform: string; title: string;
+      topics: string[]; difficulty: string | null; rating: number | null; score: number;
+    }>(pipeline).toArray();
+
+    const solvedSet = new Set(solvedIds);
+    return rawResults
+      .filter(r => r.problemId !== problemId && !solvedSet.has(r.problemId))
+      .slice(0, limit)
+      .map(r => ({ ...r, url: buildProblemUrl(r.platform, r.problemId) }));
+  } catch (error) {
+    logger.warn('Find similar unavailable:', (error as Error).message);
+    return [];
   }
-
-  if (!doc) return [];
-
-  const queryEmbedding = doc.embedding;
-  const solvedIds = getSolvedProblemIds(db, userId);
-
-  const pipeline = [
-    {
-      $vectorSearch: {
-        index: ATLAS_INDEX_NAME,
-        path: 'embedding',
-        queryVector: queryEmbedding,
-        numCandidates: (limit + 1) * 10,
-        limit: limit + 1
-      }
-    },
-    { $addFields: { score: { $meta: 'vectorSearchScore' } } },
-    { $project: { _id: 0, problemId: 1, platform: 1, title: 1, topics: 1, difficulty: 1, rating: 1, score: 1 } }
-  ];
-
-  const rawResults = await collection.aggregate<{
-    problemId: string; platform: string; title: string;
-    topics: string[]; difficulty: string | null; rating: number | null; score: number;
-  }>(pipeline).toArray();
-
-  const solvedSet = new Set(solvedIds);
-
-  return rawResults
-    .filter(r => r.problemId !== problemId && !solvedSet.has(r.problemId))
-    .slice(0, limit)
-    .map(r => ({ ...r, url: buildProblemUrl(r.platform, r.problemId) }));
 }
 
 function getSolvedProblemIds(db: Database.Database, userId: string): string[] {

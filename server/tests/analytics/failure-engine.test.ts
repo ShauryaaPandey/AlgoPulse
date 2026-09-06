@@ -234,4 +234,29 @@ describe('FailureEngine', () => {
 
     assert.strictEqual(analysis.patterns.length, 0);
   });
+
+  it('should not crash and should exclude topicless failures from patterns when problem has no topic rows', () => {
+    const problemId = uuidv4();
+    const now = new Date().toISOString();
+
+    db.prepare('INSERT INTO problems (id, platform, external_id, title, rating, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      problemId, 'codeforces', 'CF-NOTOPIC', 'Topicless Problem', 1400, now
+    );
+
+    for (let i = 0; i < 5; i++) {
+      db.prepare('INSERT INTO submissions (id, problem_id, platform_account_id, external_submission_id, submitted_at, language, verdict, attempt_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        uuidv4(), problemId, platformAccountId, `SUB-NOTOPIC-${i}`, now, 'C++', 'Wrong Answer', 1
+      );
+    }
+
+    const failureEngine = new FailureEngine(db);
+    let analysis: ReturnType<typeof failureEngine.analyzeFailures> | undefined;
+    assert.doesNotThrow(() => {
+      analysis = failureEngine.analyzeFailures(userId);
+    });
+
+    assert.strictEqual(analysis!.patterns.length, 0);
+    assert.strictEqual(Object.keys(analysis!.topicFailures).length, 0);
+    assert.strictEqual(analysis!.verdictDistribution['Wrong Answer'], 5);
+  });
 });
